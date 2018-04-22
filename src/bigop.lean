@@ -1,8 +1,4 @@
 import data.list.basic
--- Next import is only for example of decidable predicate
-import data.nat.prime 
-
-open classical
 
 open list
 
@@ -27,61 +23,48 @@ def apply_bigop := foldr (λ i, op (F i)) nil (filter P r)
 
 /- variable in filtered list -/
 
-local notation `big[`:0 op`/`:0 nil`]_(`:0 binder `∈` r `|` P:(scoped p, p)`)` F:(scoped f, f) := 
+notation `big[`:0 op`/`:0 nil`]_(`:0 binder `∈` r `|` P:(scoped p, p)`)` F:(scoped f, f) := 
 apply_bigop op nil r P F
 
-local notation `Σ_(`:0 binder `∈` r `|` P:(scoped p, p) `)` F:(scoped f, f) := 
+notation `Σ_(`:0 binder `∈` r `|` P:(scoped p, p) `)` F:(scoped f, f) := 
 apply_bigop (+) 0 r P F
 
-local notation `Π_(`:0 binder `∈` r `|` P:(scoped p, p) `)` F:(scoped f, f) := 
+notation `Π_(`:0 binder `∈` r `|` P:(scoped p, p) `)` F:(scoped f, f) := 
 apply_bigop (*) 1 r P F
 
 /- variable in unfiltered list -/
 
-local notation `big[`:0 op `/`:0 nil `]_(`:0 binder `∈` r `)` F:(scoped f, f) := 
+notation `big[`:0 op `/`:0 nil `]_(`:0 binder `∈` r `)` F:(scoped f, f) := 
 apply_bigop op nil r (λ i, true) F
 
-local notation `Σ_(`:0 binder `∈` r `)` F:(scoped f, f) := 
+notation `Σ_(`:0 binder `∈` r `)` F:(scoped f, f) := 
 apply_bigop (+) 0 r (λ i, true) F
 
-local notation `Π_(`:0 binder `∈` r `)` F:(scoped f, f) := 
+notation `Π_(`:0 binder `∈` r `)` F:(scoped f, f) := 
 apply_bigop (*) 1 r (λ i, true) F
 
 /- variable is natural numbers from a to b filtered -/
 
-local notation `big[`op`/`:0 nil`]_(`:0 binder`=`a`..`b `|` P:(scoped p, p)`)` F:(scoped f, f) := 
+notation `big[`op`/`:0 nil`]_(`:0 binder`=`a`..`b `|` P:(scoped p, p)`)` F:(scoped f, f) := 
 apply_bigop op nil (range' a (b-a+1)) P F
 
-local notation `Σ_(`:0 binder`=`a`..`b `|` P:(scoped p, p)`)` F:(scoped f, f) := 
+notation `Σ_(`:0 binder`=`a`..`b `|` P:(scoped p, p)`)` F:(scoped f, f) := 
 apply_bigop (+) 0 (range' a (b-a+1)) P F
 
-local notation `Π_(`:0 binder`=`a`..` b `|` P:(scoped p, p)`)` F:(scoped f, f) := 
+notation `Π_(`:0 binder`=`a`..` b `|` P:(scoped p, p)`)` F:(scoped f, f) := 
 apply_bigop (*) 1 (range' a (b-a+1)) P F
 
 
 /- variable is natural numbers from a to b -/
 
-local notation `big[`:0 op `/`:0 nil `]_(`:0 binder `=` a `..` b `)` F:(scoped f, f) := 
+notation `big[`:0 op `/`:0 nil `]_(`:0 binder `=` a `..` b `)` F:(scoped f, f) := 
 apply_bigop op nil (range' a (b-a+1)) (λ i, true) F
 
-local notation `Σ_(`:0 binder `=` a `..` b `)` F:(scoped f, f) := 
+notation `Σ_(`:0 binder `=` a `..` b `)` F:(scoped f, f) := 
 apply_bigop (+) 0 (range' a (b-a+1)) (λ i, true) F
 
-local notation `Π_(`:0 binder `=` a `..` b `)` F:(scoped f, f) := 
+notation `Π_(`:0 binder `=` a `..` b `)` F:(scoped f, f) := 
 apply_bigop (*) 1 (range' a (b-a+1)) (λ i, true) F
-
-/- Examples -/
-
-#eval big[(*)/1]_(i ∈ (range' 1 5) | true) i
-#eval big[(*)/1]_(i ∈ (range' 1 5)) i
-#eval big[(*)/1]_(i = 1 .. 5) i
-#eval big[(*)/1]_(i=1..5) i
-#eval Π_(i = 1..5) i
-#eval Π_(i ∈ (range' 1 5) | true) i
-
-#eval Σ_(i ∈ range 5 | nat.prime i) i
-#eval Σ_(i = 1..5 | nat.prime i) i
-#eval Σ_(i = 1..5) i
 
 
 /- First lemmas, without assuming anything on `op` and `nil` -/
