@@ -84,8 +84,20 @@ by simp [apply_bigop, Ph]
 lemma op_assoc [is_associative R op] : ∀ a b c, (a ◆ b) ◆ c = a ◆ (b ◆ c) :=
 is_associative.assoc op
 
-lemma op_left_id {op nil} [is_left_id R op nil] : ∀ a, op nil a = a :=
+lemma op_left_id {nil} [is_left_id R op nil] : ∀ a, op nil a = a :=
 is_left_id.left_id op
+
+/- Assuming only that nil is left neutral for op -/
+
+local notation `?(F` h`)` := if P h then F h else nil
+
+lemma big_cons [is_left_id R op nil] {h} (t) : 
+  (big[op/nil]_(i ∈ h::t | (P i)) (F i)) = ?(F h) ◆ (big[op/nil]_(i ∈ t | (P i)) (F i)):=
+begin
+  by_cases H : P h,
+  { simp [H, big_cons_true] },
+  { simp [H, big_cons_false, op_left_id op] }
+end
 
 /- Also need to make sure old hierarchy talks to new one.
    Associativity seems ok but we need: -/
@@ -103,25 +115,16 @@ begin
   induction r₁ with h t IH,
   { exact (eq.symm $ calc
     Op [] ◆ Op r₂ =  nil ◆ (big[op/nil]_(i ∈ r₂ | P i)F i) : by {dsimp [Op], rw big_nil}
-    ... = _ : op_left_id _ )},
-  { by_cases Ph : P h,
-    { have : F h ◆ Op t = Op (h :: t) :=
-      eq.symm (big_cons_true _ _ _ _ _ Ph),
-      exact calc
-      Op (h :: t ++ r₂) 
-          = Op (h :: (t ++ r₂))   : rfl
-      ... = F h ◆ Op (t ++ r₂)    : big_cons_true _ _ _ _ _ Ph
-      ... = F h ◆ (Op t ◆ Op r₂)  : by simp [Op, IH]
-      ... = (F h ◆ Op t) ◆ Op r₂  : eq.symm $ op_assoc _ _ _ _
-      ... = Op (h::t) ◆ Op r₂     : by rw this },
-    { have : Op t = Op (h::t) :=
-      eq.symm (big_cons_false _ _ _ _ _ Ph),
-      exact calc
-      Op (h :: t ++ r₂) 
-          = Op (h :: (t ++ r₂)) : rfl
-      ... = Op (t ++ r₂)        : big_cons_false _ _ _ _ _ Ph
-      ... = Op t ◆ Op r₂        : by simp [Op, IH]
-      ... = Op (h::t) ◆ Op r₂   : by rw this } }
+    ... = _ : op_left_id _ _ )},
+  { have : ?(F h) ◆ Op t = Op (h :: t) :=
+    eq.symm (big_cons _ _ _ _ _),
+    exact calc
+    Op (h :: t ++ r₂) 
+        = Op (h :: (t ++ r₂))      : rfl
+    ... = ?(F h) ◆ Op (t ++ r₂)    : big_cons _ _ _ _ _
+    ... = ?(F h) ◆ (Op t ◆ Op r₂)  : by simp [Op, IH]
+    ... = (?(F h) ◆ Op t) ◆ Op r₂  : eq.symm $ op_assoc _ _ _ _
+    ... = Op (h::t) ◆ Op r₂        : by rw this }
 end
 
 /- Sample specialization -/
