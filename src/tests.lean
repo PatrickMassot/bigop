@@ -1,4 +1,5 @@
 import bigop
+import data.nat.prime
 
 open list
 
