@@ -81,11 +81,23 @@ lemma big_cons_false {h} (t) (Ph : ¬ P h) :
   (big[(◆)/nil]_(i ∈ h::t | (P i)) (F i)) = (big[(◆)/nil]_(i ∈ t | (P i)) (F i)) :=
 by simp [apply_bigop, Ph]
 
+lemma big.shift (P : ℕ → Prop) [decidable_pred P] (F : ℕ → R) (a b k : ℕ) : 
+  (big[(◆)/nil]_(i=a..b | (P i)) (F i)) = (big[(◆)/nil]_(i=(a+k)..(b+k) | (P (i-k))) (F (i-k))) :=
+sorry
+
 /- Now we go towards assuming (R, op, nil) is a monoid -/
 
 /- Also need to make sure old hierarchy talks to new one.
    Associativity seems ok but we need: -/
 instance add_monoid_is_left_id (α : Type*) [add_monoid α] : is_left_id α (+) 0 := ⟨by simp⟩
+
+instance add_monoid_is_right_id (α : Type*) [add_monoid α] : is_right_id α (+) 0 := ⟨by simp⟩
+
+
+instance monoid_is_left_id (α : Type*) [monoid α] : is_left_id α (*) 1 := ⟨by simp⟩
+
+instance monoid_is_right_id (α : Type*) [monoid α] : is_right_id α (*) 1 := ⟨by simp⟩
+
 
 section nil_left_id
 /- Assuming only that nil is left neutral for op -/
@@ -188,4 +200,12 @@ begin
     intros i h,
     simpa using H (k+l+1) i (obs i h) }
 end
+
+
+lemma big.mph {φ : R → R} (H : ∀ a b : R, φ (a ◆ b) = φ a ◆ φ b) : 
+  φ (big[(◆)/nil]_(i ∈ r | (P i)) F i) = big[(◆)/nil]_(i ∈ r | (P i)) φ (F i) := 
+begin
+  sorry
+end
+#check big.mph
 end monoid
