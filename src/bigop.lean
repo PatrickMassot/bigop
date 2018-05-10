@@ -81,9 +81,34 @@ lemma big_cons_false {h} (t) (Ph : ¬ P h) :
   (big[(◆)/nil]_(i ∈ h::t | (P i)) (F i)) = (big[(◆)/nil]_(i ∈ t | (P i)) (F i)) :=
 by simp [apply_bigop, Ph]
 
+lemma range'_add_map (a b k : ℕ) : range' (a+k) b = map (λ x, x + k) (range' a b) :=
+begin
+  revert a,
+  induction b with b IH; intro a,
+  { refl },
+  { simpa using (IH $ a + 1) }
+end
+
+lemma filter_map_comm {I : Type*} {J : Type*} (f : I → J) (P : J → Prop) (r: list I) [decidable_pred P] :
+  filter P (map f r) = map f (filter (P ∘ f) r) :=
+begin
+  induction r with h _ IH,
+  { simp },
+  { by_cases H : P (f h) ; simp [filter_cons_of_pos, filter_cons_of_neg, H, IH] }
+end
+
+lemma big.map {J : Type*} (f : I → J) (P : J → Prop) [decidable_pred P] (F : J → R) : 
+  (big[(◆)/nil]_(j ∈ map f r | (P j)) (F j)) = (big[(◆)/nil]_(i ∈ r | (P (f i))) (F (f i))) :=
+by simp[apply_bigop, filter_map_comm, foldr_map]
+
+--set_option pp.all true
+
 lemma big.shift (P : ℕ → Prop) [decidable_pred P] (F : ℕ → R) (a b k : ℕ) : 
   (big[(◆)/nil]_(i=a..b | (P i)) (F i)) = (big[(◆)/nil]_(i=(a+k)..(b+k) | (P (i-k))) (F (i-k))) :=
-sorry
+begin
+  rw [range'_add_map, big.map],
+  congr_n 1 ; funext ; simp only [nat.add_sub_cancel, nat.add_sub_add_right]
+end
 
 /- Now we go towards assuming (R, op, nil) is a monoid -/
 
@@ -120,6 +145,11 @@ open is_right_id
 
 lemma big.one_term (i₀ : I) : (big[(◆)/nil]_(i ∈ [i₀]) F i) = F i₀ :=
 by simp [apply_bigop, right_id op]
+
+lemma big.one_term' (i₀ : I) : 
+  (big[(◆)/nil]_(i ∈ [i₀] | P i) F i) = if P i₀ then F i₀ else nil :=
+by by_cases H : P i₀;  simp [H, apply_bigop, right_id op]
+ 
 end nil_right_id
 
 section left_monoid
@@ -201,11 +231,27 @@ begin
     simpa using H (k+l+1) i (obs i h) }
 end
 
+lemma apply_ite {nil : R} {φ : R → R} (Hnil : φ nil = nil) (h : I) : 
+  φ (ite (P h) (F h) nil) = ite (P h) (φ (F h)) nil :=
+calc 
+      φ (ite (P h) (F h) nil) = ite (P h) (φ $ F h) (φ nil) : by { by_cases H : P h; simp[H] }
+      ... = ite (P h) (φ $ F h) nil : by rw Hnil
 
-lemma big.mph {φ : R → R} (H : ∀ a b : R, φ (a ◆ b) = φ a ◆ φ b) : 
+lemma big.mph {φ : R → R} 
+  (Hop : ∀ a b : R, φ (a ◆ b) = φ a ◆ φ b) (Hnil : φ nil = nil) : 
   φ (big[(◆)/nil]_(i ∈ r | (P i)) F i) = big[(◆)/nil]_(i ∈ r | (P i)) φ (F i) := 
 begin
-  sorry
+  induction r with h t IH,
+  { simp [big.nil, Hnil] },
+  { rw [big.cons, Hop, IH, apply_ite _ _ Hnil, ←(big.cons op nil P _ t)] }
 end
-#check big.mph
+
+lemma big.anti_mph {φ : R → R} 
+  (Hop : ∀ a b : R, φ (a ◆ b) = φ b ◆ φ a) (Hnil : φ nil = nil) :
+  φ (big[(◆)/nil]_(i ∈ r | (P i)) F i) = big[(◆)/nil]_(i ∈ r.reverse | (P i)) φ (F i) := 
+begin
+  induction r with h t IH,
+  { simp [big.nil, Hnil] },
+  { rw [big.cons, Hop, apply_ite _ _ Hnil, reverse_cons', big.append, IH, big.one_term'] }
+end
 end monoid
