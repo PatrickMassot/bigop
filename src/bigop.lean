@@ -1,4 +1,5 @@
 import data.list.basic
+import tactic.ring
 
 open list
 
@@ -88,6 +89,14 @@ begin
   { refl },
   { simpa using (IH $ a + 1) }
 end
+
+lemma range'_sub_map (a b k : ℕ) : range' a b = map (λ x, x - k) (range' (a+k) b) :=
+begin
+  suffices : (λ (x : ℕ), x - k) ∘ (λ (x : ℕ), x + k) = id,
+  { rw [range'_add_map, map_map, this, map_id] },
+  { funext, simp [nat.add_sub_cancel_left] }
+end
+
 
 lemma filter_map_comm {I : Type*} {J : Type*} (f : I → J) (P : J → Prop) (r: list I) [decidable_pred P] :
   filter P (map f r) = map f (filter (P ∘ f) r) :=
@@ -253,5 +262,37 @@ begin
   induction r with h t IH,
   { simp [big.nil, Hnil] },
   { rw [big.cons, Hop, apply_ite _ _ Hnil, reverse_cons', big.append, IH, big.one_term'] }
+end
+
+lemma reverse_range' (a b : ℕ) : reverse (range' a b) = map (λ i, 2*a+b-i-1) (range' a b) :=
+begin
+  induction b with b IH,
+  { simp },
+  { have pfff : (λ (i : ℕ), 2 * a + b - i - 1) ∘ (λ (x : ℕ), x - 1) = λ x, 2 * a + b + 1 - x - 1,
+    funext, simp, ring, sorry,
+    have bis : a + b = (λ (x : ℕ), 2 * a + b + 1 - x - 1) a,
+    simp, ring, sorry,
+    have ter : (a :: range' (a + 1) b : list ℕ) = range' a (b+1),
+    sorry,
+    have := calc
+    reverse (range' a (nat.succ b)) = reverse (range' a (b+1)) : rfl
+    ... = reverse ((range' a b) ++ [a+b]) : by rw range'_concat
+    ... = (a+b) :: reverse (range' a b) : reverse_append _ _
+    ... = (a + b) :: map (λ (i : ℕ), 2 * a + b - i - 1) (range' a b) : by rw IH
+    ... = (a + b) :: map (λ (i : ℕ), 2 * a + b - i - 1) (map (λ x, x-1) $ range' (a+1) b) : by rw range'_sub_map
+    ... = _ : by rw [map_map, pfff, bis, ←map_cons, ter],
+    exact this }
+end
+
+#check big.map
+lemma big.range_anti_mph {φ : R → R} (P : ℕ → Prop) [decidable_pred P] (F : ℕ → R) (a b : ℕ)
+  (Hop : ∀ a b : R, φ (a ◆ b) = φ b ◆ φ a) (Hnil : φ nil = nil) :
+  φ (big[(◆)/nil]_(i=a..b | (P i)) F i) = big[(◆)/nil]_(i=a..b | (P (a-i+b))) φ (F (a-i+b)) := 
+begin
+  rw big.anti_mph op nil _ _ _ Hop Hnil,
+  rw reverse_range',
+  rw big.map op nil _ (λ i, a-i+b) P,
+  dsimp [apply_bigop],
+  sorry
 end
 end monoid
