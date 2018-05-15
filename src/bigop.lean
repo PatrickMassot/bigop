@@ -330,32 +330,13 @@ theorem nth_map (f : α → β) : ∀ l n, nth (map f l) n = (nth l n).map f
 theorem nth_le_map (f : α → β) {l n} (H1 H2) : nth_le (map f l) n H1 = f (nth_le l n H2) :=
 option.some.inj $ by rw [← nth_le_nth, nth_map, nth_le_nth]; refl
 
-#check nth_le_reverse
-
-#reduce let a:=5 in let b := 8 in map (λ i, 2 * a + (b + 1 - a) - i - 1) (range' a (b+1-a))
 #reduce let a:=5 in let b := 8 in map (λ i, a + b - i) (range' a (b+1-a))
 
-lemma reverse_range' (a b : ℕ) : reverse (range' a b) = map (λ i, 2*a+b-i-1) (range' a b) :=
-begin
-  sorry
-end
+lemma reverse_range' (a b : ℕ) : reverse (range' a (b+1-a)) = map (λ i, a+b-i) (range' a (b+1-a)) :=
+sorry
 
 lemma big.range_anti_mph {φ : R → R} (P : ℕ → Prop) [decidable_pred P] (F : ℕ → R) (a b : ℕ)
   (Hop : ∀ a b : R, φ (a ◆ b) = φ b ◆ φ a) (Hnil : φ nil = nil) :
   φ (big[(◆)/nil]_(i=a..b | (P i)) F i) = big[(◆)/nil]_(i=a..b | (P (a+b-i))) φ (F (a+b-i)) := 
-begin
-  by_cases H : b < a,
-  { simp [big.empty_range, *] },
-  { rw big.anti_mph op nil _ _ _ Hop Hnil,
-    rw reverse_range',
-    rw big.map op nil _ _ _,
-    apply big.ext ; intros i i_in; have : 2 * a + (b + 1 - a) - i - 1 = a+b-i := 
-    begin
-      replace H : a ≤ b := le_of_not_gt H,
-      exact calc 2 * a + (b + 1 - a) - i - 1 = a + (a + (b + 1 - a)) - i - 1 : by simp [two_mul]
-        ... = a + (b + 1) - i - 1 : by rw nat.add_sub_of_le (le_trans H (nat.le_succ _))
-        ... = (a + b) + 1 - (i + 1)  : by simp [add_assoc,nat.sub_sub]
-        ... = a + b - i : by rw nat.add_sub_add_right,
-    end; rw this }
-end
+by rw [big.anti_mph _ _ _ _ _ Hop Hnil, reverse_range', big.map] 
 end monoid
