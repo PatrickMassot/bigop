@@ -198,6 +198,44 @@ section monoid
 variables [is_left_id R op nil] [is_right_id R op nil] [is_associative R op]
 open is_left_id is_right_id is_associative
 
+lemma big.concat (i) : 
+  (big[(◆)/nil]_(i ∈ concat r i | (P i)) (F i)) = 
+  (big[(◆)/nil]_(i ∈ r | (P i)) (F i)) ◆ (if P i then F i else nil) :=
+by simp [big.append,big.one_term']
+
+lemma big.concat_true (i) : 
+  (big[(◆)/nil]_(i ∈ concat r i) (F i)) = 
+  (big[(◆)/nil]_(i ∈ r) (F i)) ◆ F i :=
+by apply big.concat
+
+lemma big.concat_range_true (P : ℕ → Prop) [decidable_pred P] (F : ℕ → R) (a b : ℕ) : 
+  (big[(◆)/nil]_(i =a..(b+1) ) (F i)) = 
+  (big[(◆)/nil]_(i =a..b) (F i)) ◆ F (b+1) := -- wrong if b+1 < a
+begin
+  by_cases H :a ≤ b + 1,
+  { have : b + 1 + 1 - a = b + 1 - a + 1, sorry,
+    rw [this, range'_concat],
+    rw ←concat_eq_append,
+    rw big.concat_true,
+    congr_n 2,
+    
+    have : a + (b + 1 - a) = b + 1,
+    begin
+      rw add_comm,
+      change (b + 1) - a + a = b + 1, 
+      sorry --rw nat.add_sub_cancel',  
+    end,
+    rw this },
+    { have : range' a (b + 1 + 1 - a)= [], 
+      sorry,
+      rw this,
+      have : range' a (b + 1 - a)= [], 
+      sorry,
+      rw this,
+      rw big.nil, sorry }
+end
+
+
 lemma big.commute_through {a : R} (H : ∀ i ∈ r, P i → a ◆ F i = F i ◆ a) : 
   a ◆ (big[(◆)/nil]_(i ∈ r | (P i)) F i) = (big[(◆)/nil]_(i ∈ r | (P i)) (F i)) ◆ a := 
 begin
@@ -213,6 +251,23 @@ begin
     intros i i_in_t,
     exact H _ (mem_cons_of_mem h i_in_t) }
 end
+
+lemma big.reverse_of_commute (H : ∀ i j ∈ r, P i  → P j → F i ◆ F j = F j ◆ F i) : 
+  (big[(◆)/nil]_(i ∈ r | (P i)) F i) = (big[(◆)/nil]_(i ∈ reverse r | (P i)) (F i)) := 
+begin
+  induction r with h t IH,
+  { simp },
+  { rw [big.cons, reverse_cons, big.concat],
+    by_cases Ph : P h,
+    { simp * at * { contextual := true },
+      apply big.commute_through,
+      simp * {contextual := true } },
+    { simp [Ph, left_id op, right_id op, IH, H] { contextual := true } } }
+end
+
+lemma big.reverse_range_of_commute (P : ℕ → Prop) [decidable_pred P] (F : ℕ → R) (a b : ℕ) (H : ∀ i j ∈ range' a (b+1-a), P i  → P j → F i ◆ F j = F j ◆ F i) : 
+  (big[(◆)/nil]_(i=a..b | (P i)) F i) = (big[(◆)/nil]_(i=a..b | (P (a+b-i))) (F (a+b-i))) := 
+by rwa [big.reverse_of_commute, reverse_range'_map_range', big.map]
 
 lemma big.gather_of_commute (F G : ℕ → R) (k l : ℕ)
   (H : ∀ i j, i ≠ j → F i ◆ G j = G j ◆ F i) : 
@@ -268,10 +323,6 @@ begin
   { simp [big.nil, Hnil] },
   { rw [big.cons, Hop, apply_ite _ _ Hnil, reverse_cons', big.append, IH, big.one_term'] }
 end
-variables (a b : nat)
-
-
-
 
 lemma big.range_anti_mph {φ : R → R} (P : ℕ → Prop) [decidable_pred P] (F : ℕ → R) (a b : ℕ)
   (Hop : ∀ a b : R, φ (a ◆ b) = φ b ◆ φ a) (Hnil : φ nil = nil) :
