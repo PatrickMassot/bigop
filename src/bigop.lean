@@ -1,3 +1,4 @@
+import tactic.ext
 import pending_lemmas
 
 open list
@@ -82,16 +83,34 @@ lemma big_cons_false {h} (t) (Ph : ¬ P h) :
   (big[(◆)/nil]_(i ∈ h::t | (P i)) (F i)) = (big[(◆)/nil]_(i ∈ t | (P i)) (F i)) :=
 by simp [apply_bigop, Ph]
 
+lemma big_rec (K : R → Prop) (Knil : K nil) (Kop : ∀ i x, P i → K x → K ((F i) ◆ x)) :
+  K (big[(◆)/nil]_(i ∈ r | (P i)) (F i)) :=
+begin
+  induction r with h t IH,
+  { simp[big.nil, Knil] },
+  { by_cases H : P h,
+    { simp [big_cons_true, H, Kop _ _ H IH] },
+    { simp [big_cons_false, H, IH] } }
+end
+ 
+lemma big_ind (K : R → Prop) (Knil : K nil) (Kop : ∀ x y, K x → K y → K (x ◆ y))
+(K_F : ∀ i, P i → K (F i)) :
+  K (big[(◆)/nil]_(i ∈ r | (P i)) (F i)) :=
+begin
+  apply big_rec,
+    exact Knil,
+  intros i x P_i K_x,
+  apply Kop ; tauto
+end
 
 -- A version of extensionality where we assume same (◆)/nil and same list
-@[extensionality]
 lemma big.ext (P') [decidable_pred P'] (F' : I → R) 
   (HP : ∀ i ∈ r, P i ↔ P' i) (HF : ∀ i ∈ r, F i = F' i) :
   (big[(◆)/nil]_(i ∈ r | (P i)) (F i)) = (big[(◆)/nil]_(i ∈ r | (P' i)) (F' i)) :=
 begin
   unfold apply_bigop,
-  rw filter_congr HP,
-  apply foldr_ext,
+  rw list.filter_congr HP,
+  apply list.foldr_ext,
   intros _ i_r _,
   simp[HF, mem_filter.1 i_r]
 end
