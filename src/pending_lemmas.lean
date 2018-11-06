@@ -8,38 +8,12 @@ open list nat
 
 variables {α : Type*} {β : Type*}
 
-theorem nth_map (f : α → β) : ∀ l n, nth (map f l) n = (nth l n).map f
-| []       n     := rfl
-| (a :: l) 0     := rfl
-| (a :: l) (n+1) := nth_map l n
-
 theorem nth_le_map (f : α → β) {l n} (H1 H2) : nth_le (map f l) n H1 = f (nth_le l n H2) :=
 option.some.inj $ by rw [← nth_le_nth, nth_map, nth_le_nth]; refl
 
-theorem map_add_range' (a) : ∀ s n : ℕ, map ((+) a) (range' s n) = range' (a + s) n
-| s 0     := rfl
-| s (n+1) := congr_arg (cons _) (map_add_range' (s+1) n)
-
-theorem range_succ_eq_map (n : ℕ) : range (n + 1) = 0 :: map succ (range n) :=
-by rw [range_eq_range', range_eq_range', range',
-       add_comm, ← map_add_range'];
-   congr; exact funext one_add
-
-theorem reverse_range' : ∀ s n : ℕ,
-  reverse (range' s n) = map (λ i, s + n - 1 - i) (range n)
-| s 0     := rfl
-| s (n+1) := by rw [range'_concat, reverse_append, range_succ_eq_map];
-  simpa [show s + (n + 1) - 1 = s + n, from rfl, (∘),
-    λ a i, show a - 1 - i = a - succ i,
-    by rw [nat.sub_sub, add_comm]; refl]
-  using reverse_range' s n
-
-theorem range'_eq_map_range (s n : ℕ) : range' s n = map ((+) s) (range n) :=
-by rw [range_eq_range', map_add_range']; refl
-
 lemma reverse_range'_map_range' (a b : ℕ) : reverse (range' a (b+1-a)) = map (λ i, a+b-i) (range' a (b+1-a)) :=
 begin
-  rw [reverse_range', range'_eq_map_range, map_map],
+  rw [reverse_range', range'_eq_map_range, list.map_map],
   apply map_congr, intros i H,
   simp at *,
   rw [nat.add_sub_add_left, nat.add_sub_cancel'], {refl},
@@ -87,7 +61,7 @@ end
 lemma range'_sub_map (a b k : ℕ) : range' a b = map (λ x, x - k) (range' (a+k) b) :=
 begin
   suffices : (λ (x : ℕ), x - k) ∘ (λ (x : ℕ), x + k) = id,
-  { rw [range'_add_map, map_map, this, map_id] },
+  { rw [range'_add_map, list.map_map, this, map_id] },
   { funext, simp [nat.add_sub_cancel_left] }
 end
 
