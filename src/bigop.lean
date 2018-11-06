@@ -1,4 +1,5 @@
 import tactic.ext
+import tactic.linarith
 import pending_lemmas
 
 open list
@@ -101,6 +102,18 @@ begin
     exact Knil,
   intros i x P_i K_x,
   apply Kop ; tauto
+end
+
+lemma big_append_eq_of_not_mem [decidable_eq I] {j} (H : j ∉ r) :
+  (big[(◆)/nil]_(i ∈ j::r | ((P i) ∧ i ≠ j)) (F i)) = big[(◆)/nil]_(i ∈ r | (P i)) (F i) :=
+begin
+  unfold apply_bigop,
+  congr' 1,
+  rw list.filter_cons_of_neg,
+  apply list.filter_congr,
+  { intros x x_in,
+    simp [show x ≠ j, by { intro H', rw ←H' at H, contradiction }] },
+  { finish }
 end
 
 -- A version of extensionality where we assume same (◆)/nil and same list
@@ -253,30 +266,19 @@ begin
       rw this,
       rw big.nil, sorry }
 end
-attribute [elab_as_eliminator] big_ind
-#check @big_ind
-/-
-bigop.lean:257:0: information check result
-big_ind :
-  ∀ {R : Type u_3} {I : Type u_4} (op : R → R → R) (nil : R) (r : list I) (P : I → Prop)
-  [_inst_1 : decidable_pred P] (F : I → R) (K : R → Prop),
-    K nil →
-    (∀ (x y : R), K x → K y → K (op x y)) →
-    (∀ (i : I), P i → K (F i)) → K (big[op/nil]_(i : I∈r|P i)F i)
--/
+
 lemma big.commute_through {a : R} (H : ∀ i, P i → a ◆ F i = F i ◆ a) : 
   a ◆ (big[(◆)/nil]_(i ∈ r | (P i)) F i) = (big[(◆)/nil]_(i ∈ r | (P i)) (F i)) ◆ a := 
-big_ind  op nil r P F (λ x,  a ◆ x = x ◆ a) _ _ _
-/- begin
- -- let K := λ x, (a ◆ x = x ◆ a),
- -- change K (big[(◆)/nil]_(i ∈ r | (P i)) F i),
-  induction a using big_ind, dsimp [K],
+ begin
+  let K := λ x, (a ◆ x = x ◆ a),
+  change K (big[(◆)/nil]_(i ∈ r | (P i)) F i),
+  apply big_ind ; dsimp [K],
   { simp [left_id op, right_id op] },
   { intros x y xop yop,
     rw [assoc op, ←assoc op, xop, ← yop, assoc op]},
   { exact H }
 end
- -/
+
 lemma big.reverse_of_commute (H : ∀ i j, P i  → P j → F i ◆ F j = F j ◆ F i) : 
   (big[(◆)/nil]_(i ∈ r | (P i)) F i) = (big[(◆)/nil]_(i ∈ reverse r | (P i)) (F i)) := 
 begin
@@ -290,7 +292,7 @@ begin
     { simp [Ph, left_id op, right_id op, IH, H] { contextual := true } } }
 end
 
-lemma big.reverse_range_of_commute (P : ℕ → Prop) [decidable_pred P] (F : ℕ → R) (a b : ℕ) (H : ∀ i j ∈ range' a (b+1-a), P i  → P j → F i ◆ F j = F j ◆ F i) : 
+lemma big.reverse_range_of_commute (P : ℕ → Prop) [decidable_pred P] (F : ℕ → R) (a b : ℕ) (H : ∀ i j, P i  → P j → F i ◆ F j = F j ◆ F i) : 
   (big[(◆)/nil]_(i=a..b | (P i)) F i) = (big[(◆)/nil]_(i=a..b | (P (a+b-i))) (F (a+b-i))) := 
 by rwa [big.reverse_of_commute, reverse_range'_map_range', big.map]
 
@@ -303,10 +305,11 @@ begin
   { have : k + 1 - k = 1,
     rw [add_comm, nat.add_sub_cancel],
     simp [big.one_term, this] },
-  { have obs : ∀ i, (i ∈ (range' k (l + 1))) → k + l + 1 ≠ i:=
-      assume i h, ne_of_gt (mem_range'.1 h).2,
-    
-    have : ∀ j, k + j + 1 - k = j +1 :=
+  { have obs : k+l+1 ∉ range' k (l + 1), 
+    { rw mem_range', 
+      rintro ⟨_, _⟩, 
+      linarith },
+    have : ∀ j, k + j + 1 - k = j + 1 :=
       λ j, calc 
         k + j + 1 - k = k + (j + 1) - k : rfl
                   ... = j+1 : by rw [add_comm, nat.add_sub_cancel],
@@ -320,9 +323,13 @@ begin
            congr,
            skip,
            rw ← assoc op },
-    rw [big.commute_through op, assoc op, ← assoc op, IH],
+    rw [←big_append_eq_of_not_mem  _ _ _ _ G obs,
+        big.commute_through op, 
+        big_append_eq_of_not_mem  _ _ _ _ G obs,
+        assoc op, ← assoc op, IH],
     intros i h,
-    simpa using H (k+l+1) i (obs i h) }
+    apply H,
+    tauto }
 end
 
 lemma apply_ite {nil : R} {φ : R → R} (Hnil : φ nil = nil) (h : I) : 
@@ -346,7 +353,7 @@ lemma big.anti_mph {φ : R → R}
 begin
   induction r with h t IH,
   { simp [big.nil, Hnil] },
-  { rw [big.cons, Hop, apply_ite _ _ Hnil, reverse_cons', big.append, IH, big.one_term'] }
+  { rw [big.cons, Hop, apply_ite _ _ Hnil, reverse_cons', concat_eq_append, big.append, IH, big.one_term'] }
 end
 
 lemma big.range_anti_mph {φ : R → R} (P : ℕ → Prop) [decidable_pred P] (F : ℕ → R) (a b : ℕ)
