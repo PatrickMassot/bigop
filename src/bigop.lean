@@ -136,7 +136,7 @@ begin
   rw [range'_add_map, big.map],
   have : b + k + 1 - (a + k) = b + 1 - a := 
     by rw [add_comm a, ← nat.sub_sub, add_right_comm, nat.add_sub_cancel],
-  congr_n 1 ; funext; simp only [nat.add_sub_cancel,  this]
+  congr' 1 ; funext; simp only [nat.add_sub_cancel,  this]
 end
 
 /- Now we go towards assuming (R, op, nil) is a monoid -/
@@ -218,8 +218,8 @@ variables [is_left_id R op nil] [is_right_id R op nil] [is_associative R op]
 open is_left_id is_right_id is_associative
 
 lemma big.concat (i) : 
-  (big[(◆)/nil]_(i ∈ concat r i | (P i)) (F i)) = 
-  (big[(◆)/nil]_(i ∈ r | (P i)) (F i)) ◆ (if P i then F i else nil) :=
+  (big[(◆)/nil]_(j ∈ concat r i | (P j)) (F j)) = 
+  (big[(◆)/nil]_(j ∈ r | (P j)) (F j)) ◆ (if P i then F i else nil) :=
 by simp [big.append,big.one_term']
 
 lemma big.concat_true (i) : 
@@ -236,7 +236,7 @@ begin
     rw [this, range'_concat],
     rw ←concat_eq_append,
     rw big.concat_true,
-    congr_n 2,
+    congr' 2,
     
     have : a + (b + 1 - a) = b + 1,
     begin
@@ -253,30 +253,36 @@ begin
       rw this,
       rw big.nil, sorry }
 end
-
-
-lemma big.commute_through {a : R} (H : ∀ i ∈ r, P i → a ◆ F i = F i ◆ a) : 
+attribute [elab_as_eliminator] big_ind
+#check @big_ind
+/-
+bigop.lean:257:0: information check result
+big_ind :
+  ∀ {R : Type u_3} {I : Type u_4} (op : R → R → R) (nil : R) (r : list I) (P : I → Prop)
+  [_inst_1 : decidable_pred P] (F : I → R) (K : R → Prop),
+    K nil →
+    (∀ (x y : R), K x → K y → K (op x y)) →
+    (∀ (i : I), P i → K (F i)) → K (big[op/nil]_(i : I∈r|P i)F i)
+-/
+lemma big.commute_through {a : R} (H : ∀ i, P i → a ◆ F i = F i ◆ a) : 
   a ◆ (big[(◆)/nil]_(i ∈ r | (P i)) F i) = (big[(◆)/nil]_(i ∈ r | (P i)) (F i)) ◆ a := 
-begin
-  induction r with h t IH,
-  { rw [big.nil, left_id op, right_id op] },
-  { rw big.cons,
-    have : a ◆ ?(F h) = ?(F h) ◆ a,
-    { by_cases H' : P h,
-      { simp [H', H h (by simp)] },
-      { simp [H', left_id op, right_id op] }},
-    conv in (op _ a) { rw (assoc op) },
-    rw [←IH, ←(assoc op), this, ←(assoc op)],
-    intros i i_in_t,
-    exact H _ (mem_cons_of_mem h i_in_t) }
+big_ind  op nil r P F (λ x,  a ◆ x = x ◆ a) _ _ _
+/- begin
+ -- let K := λ x, (a ◆ x = x ◆ a),
+ -- change K (big[(◆)/nil]_(i ∈ r | (P i)) F i),
+  induction a using big_ind, dsimp [K],
+  { simp [left_id op, right_id op] },
+  { intros x y xop yop,
+    rw [assoc op, ←assoc op, xop, ← yop, assoc op]},
+  { exact H }
 end
-
-lemma big.reverse_of_commute (H : ∀ i j ∈ r, P i  → P j → F i ◆ F j = F j ◆ F i) : 
+ -/
+lemma big.reverse_of_commute (H : ∀ i j, P i  → P j → F i ◆ F j = F j ◆ F i) : 
   (big[(◆)/nil]_(i ∈ r | (P i)) F i) = (big[(◆)/nil]_(i ∈ reverse r | (P i)) (F i)) := 
 begin
   induction r with h t IH,
   { simp },
-  { rw [big.cons, reverse_cons, big.concat],
+  { rw [big.cons, reverse_cons, ←concat_eq_append, big.concat], 
     by_cases Ph : P h,
     { simp * at * { contextual := true },
       apply big.commute_through,
