@@ -1,8 +1,8 @@
 [package]
 name = "bigop"
 version = "0.1"
-lean_version = "3.4.1"
+lean_version = "nightly-2018-11-13"
 path = "src"
 
 [dependencies]
-mathlib = {git = "https://github.com/leanprover/mathlib", rev = "17da2776ccb9e3d3c862b011aa0ff9f9b50044d3"}
+mathlib = {git = "https://github.com/leanprover/mathlib", rev = "452c9a29dcf791e9e9f156ca9ce23e795f0a584f"}
