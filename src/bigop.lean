@@ -136,10 +136,10 @@ by simp[apply_bigop, filter_map_comm, foldr_map]
 --set_option pp.all true
 
 lemma big.empty_range (P : ℤ → Prop) [decidable_pred P] (F : ℤ → R) (a b : ℤ)
-  (H : b < a) : (big[(◆)/nil]_(i=a..b | (P i)) (F i)) = nil :=
+  (H : b ≤ a) : (big[(◆)/nil]_(i=a..b | (P i)) (F i)) = nil :=
 begin
   convert big.nil op nil P F,
-  exact (int.range_eq_nil _ _).2 (le_of_lt H)
+  exact (int.range_eq_nil _ _).2 H
 end
 
 lemma big.shift (P : ℤ → Prop) [decidable_pred P] (F : ℤ → R) (a b k : ℤ) :
@@ -272,7 +272,11 @@ lemma big.gather_of_commute (F G : ℤ → R) (a b : ℤ)
   (big[(◆)/nil]_(i = a..b) F i) ◆ (big[(◆)/nil]_(i = a..b) G i) =
   big[(◆)/nil]_(i = a..b) F i ◆ G i :=
 begin
-  sorry
+  by_cases h : a < b,
+  { 
+    sorry },
+  { repeat { rw big.empty_range, swap, exact le_of_not_gt h }, 
+    rw left_id op }
 end
 
 lemma apply_ite {nil : R} {φ : R → R} (Hnil : φ nil = nil) (h : I) :

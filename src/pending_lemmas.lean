@@ -96,8 +96,24 @@ end
 @[simp]
 lemma int.to_nat_zero : int.to_nat 0 = 0 := rfl
 
+lemma int.to_nat_eq_zero (a) : int.to_nat a = 0 ↔ a ≤ 0 :=
+begin
+  induction a with n,
+  { change n = 0 ↔ int.of_nat n ≤ 0,
+    split ; intro h,
+    { rw h,
+      refl },
+    { apply eq_zero_of_le_zero,
+      rwa ←int.coe_nat_le_coe_nat_iff n 0 } },
+  { simp[int.to_nat] },
+end
+
+
 lemma int.to_nat_sub_eq_zero (a b : ℤ) : int.to_nat (b - a) = 0 ↔ b ≤ a :=
-sorry
+begin
+  rw ←sub_nonpos,
+  sorry
+end
 
 lemma int.range_eq_nil (a b) : int.range a b = [] ↔ b ≤ a :=
 by unfold int.range ; rw [list.map_eq_nil, list.range_eq_nil, int.to_nat_sub_eq_zero]
