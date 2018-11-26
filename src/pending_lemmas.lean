@@ -5,6 +5,7 @@
 import data.list.basic
 import data.int.basic
 import tactic.ring
+import tactic.linarith
 
 open list nat
 
@@ -110,10 +111,7 @@ end
 
 
 lemma int.to_nat_sub_eq_zero (a b : ℤ) : int.to_nat (b - a) = 0 ↔ b ≤ a :=
-begin
-  rw ←sub_nonpos,
-  sorry
-end
+by rw [←sub_nonpos, int.to_nat_eq_zero]
 
 lemma int.range_eq_nil (a b) : int.range a b = [] ↔ b ≤ a :=
 by unfold int.range ; rw [list.map_eq_nil, list.range_eq_nil, int.to_nat_sub_eq_zero]
@@ -129,15 +127,49 @@ end
 
 lemma reverse_int_range_map_int_range (a b) : reverse (int.range a b) = map (λ i, a+b-i-(1 : ℤ)) (int.range a b) :=
 begin
-  unfold int.range,
-  rw ←list.map_reverse,
-  sorry
+  by_cases h : a ≤ b,
+  { unfold int.range,
+    rw [←list.map_reverse, range_eq_range', reverse_range'],
+    repeat { rw list.map_map },
+    change map (λ (x : ℕ), a + ↑(0 + int.to_nat (b - a) - 1 - x)) (range (int.to_nat (b - a))) =
+      map (λ (x : ℕ), a + b - (a + x) - 1) (range' 0 (int.to_nat (b - a))),
+    rw [zero_add, range_eq_range'],
+    apply map_congr,
+    intros n n_in,
+    have n_lt := (list.mem_range'.1 n_in).right,
+    rw zero_add at n_lt,
+    have key : ↑(int.to_nat (b - a) - 1 - n) = b - a - 1 -n,
+    { rw [nat.sub_sub, int.coe_nat_sub, int.to_nat_of_nonneg (sub_nonneg_of_le h), int.coe_nat_add],
+      ring,
+      rwa add_comm },
+    rw key,
+    ring },
+   { rw (int.range_eq_nil a b).2 (le_of_not_le h),
+     simp }
 end
 
-def h (a b) := concat (int.range a (b-1)) (b-1)
+lemma int.to_nat_succ {a : ℤ} (h : 0 ≤ a) : int.to_nat a + 1 = int.to_nat (a+1) :=
+begin
+  cases a,
+  refl,
+  exfalso,
+  exact h
+end
 
-lemma int_range_eq_concat {a b} (h : a ≤ b) : int.range a b = concat (int.range a (b-1)) (b-1) :=
+lemma int_range_eq_concat {a b} (h : a < b) : int.range a b = concat (int.range a (b-1)) (b-1) :=
 begin
   unfold int.range,
-  sorry
+  have h' : 0 ≤ b - a - 1, by have := int.add_one_le_of_lt h ; linarith,
+  have : b - 1 = (λ (r : ℕ), a + ↑r) (int.to_nat (b - a-1)),
+  { change b - 1 = a + ↑(int.to_nat (b - a - 1)),
+    rw int.to_nat_of_nonneg h',
+    ring },
+  rw [this, ←map_concat],
+  congr,
+  simp only [function.comp_app],
+  rw [int.to_nat_of_nonneg h', concat_eq_append, show a + (b - a - 1) - a = b - a - 1, by simp],
+  convert list.range_concat _,
+  rw int.to_nat_succ h',
+  congr,
+  ring
 end

@@ -3,7 +3,7 @@ import tactic.linarith
 import pending_lemmas
 
 open list
-
+#check foldr
 variables {R : Type*} {I : Type*} (op : R → R → R) (nil: R)
           (r : list I) (P : I → Prop) [decidable_pred P] (F : I → R)
 
@@ -232,7 +232,7 @@ lemma big.concat_true (i) :
   (big[(◆)/nil]_(i ∈ r) (F i)) ◆ F i :=
 by apply big.concat
 
-lemma big.concat_range_true (F : ℤ → R) {a b : ℤ} (h : a ≤ b) :
+lemma big.concat_range_true (F : ℤ → R) {a b : ℤ} (h : a < b) :
   (big[(◆)/nil]_(i =a..b) (F i)) =
   (big[(◆)/nil]_(i =a..b-1) (F i)) ◆ F (b-1) :=
 by rw int_range_eq_concat h ; apply big.concat_true
@@ -273,9 +273,9 @@ lemma big.gather_of_commute (F G : ℤ → R) (a b : ℤ)
   big[(◆)/nil]_(i = a..b) F i ◆ G i :=
 begin
   by_cases h : a < b,
-  { 
+  {
     sorry },
-  { repeat { rw big.empty_range, swap, exact le_of_not_gt h }, 
+  { repeat { rw big.empty_range, swap, exact le_of_not_gt h },
     rw left_id op }
 end
 
