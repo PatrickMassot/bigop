@@ -1,5 +1,5 @@
 /-
-  The lemmas in this file will soon be in mathlib
+  The lemmas in this file may be soon be in mathlib, if not already
 -/
 
 import data.list.basic
@@ -7,7 +7,7 @@ import data.int.basic
 import tactic.ring
 import tactic.linarith
 
-open list nat
+open list nat int
 
 variables {α : Type*} {β : Type*}
 
@@ -69,52 +69,48 @@ end
 lemma list.map_eq_nil {α : Type*} {β : Type*} (f : α → β) (l : list α) : map f l = [] ↔ l = [] :=
 ⟨eq_nil_of_map_eq_nil, λ h, by rw h ; refl⟩
 
--- theorem mem_range_iff {m n r : ℤ} : r ∈ range m n ↔ m ≤ r ∧ r < n
 lemma list.eq_nil_iff_not_mem {α : Type*} (l : list α) : l = [] ↔ ∀ x, x ∉ l :=
 ⟨λ h, by simp[h],
-begin
-  intro H,
-  cases l with h t,
-  refl,
-  exfalso,
-  specialize H h,
-  have : h ∈ list.cons h t, by simp,
-  exact H this
-end
-⟩
+  begin
+    intro H,
+    cases l with h t,
+    refl,
+    exfalso,
+    specialize H h,
+    have : h ∈ list.cons h t, by simp,
+    exact H this
+  end⟩
 
-lemma list.range_eq_nil (n : ℕ) : range n = [] ↔ n = 0 :=
+lemma list.range_eq_nil (n : ℕ) : list.range n = [] ↔ n = 0 :=
 begin
   rw list.eq_nil_iff_not_mem,
-  change (∀ (x : ℕ), ¬ x ∈ range n) ↔ n = 0,
   simp [mem_range],
   split ; intro h,
-  exact eq_zero_of_le_zero (h 0),
-  rw h,
-  exact nat.zero_le,
+  { exact eq_zero_of_le_zero (h 0) },
+  { rw h,
+    exact nat.zero_le }
 end
 
 @[simp]
-lemma int.to_nat_zero : int.to_nat 0 = 0 := rfl
+lemma to_nat_zero : to_nat 0 = 0 := rfl
 
-lemma int.to_nat_eq_zero (a) : int.to_nat a = 0 ↔ a ≤ 0 :=
+lemma to_nat_eq_zero (a) : to_nat a = 0 ↔ a ≤ 0 :=
 begin
   induction a with n,
-  { change n = 0 ↔ int.of_nat n ≤ 0,
+  { change n = 0 ↔ of_nat n ≤ 0,
     split ; intro h,
     { rw h,
       refl },
     { apply eq_zero_of_le_zero,
-      rwa ←int.coe_nat_le_coe_nat_iff n 0 } },
-  { simp[int.to_nat] },
+      rwa ←coe_nat_le_coe_nat_iff n 0 } },
+  { simp[to_nat] },
 end
 
-
-lemma int.to_nat_sub_eq_zero (a b : ℤ) : int.to_nat (b - a) = 0 ↔ b ≤ a :=
-by rw [←sub_nonpos, int.to_nat_eq_zero]
+lemma to_nat_sub_eq_zero (a b : ℤ) : to_nat (b - a) = 0 ↔ b ≤ a :=
+by rw [←sub_nonpos, to_nat_eq_zero]
 
 lemma int.range_eq_nil (a b) : int.range a b = [] ↔ b ≤ a :=
-by unfold int.range ; rw [list.map_eq_nil, list.range_eq_nil, int.to_nat_sub_eq_zero]
+by unfold int.range ; rw [list.map_eq_nil, list.range_eq_nil, to_nat_sub_eq_zero]
 
 lemma int.range_shift (a b k) : int.range (a+k) (b+k) = map (λ x, x+k) (int.range a b) :=
 begin
@@ -131,15 +127,15 @@ begin
   { unfold int.range,
     rw [←list.map_reverse, range_eq_range', reverse_range'],
     repeat { rw list.map_map },
-    change map (λ (x : ℕ), a + ↑(0 + int.to_nat (b - a) - 1 - x)) (range (int.to_nat (b - a))) =
-      map (λ (x : ℕ), a + b - (a + x) - 1) (range' 0 (int.to_nat (b - a))),
+    change map (λ (x : ℕ), a + ↑(0 + to_nat (b - a) - 1 - x)) (range (to_nat (b - a))) =
+      map (λ (x : ℕ), a + b - (a + x) - 1) (range' 0 (to_nat (b - a))),
     rw [zero_add, range_eq_range'],
     apply map_congr,
     intros n n_in,
     have n_lt := (list.mem_range'.1 n_in).right,
     rw zero_add at n_lt,
-    have key : ↑(int.to_nat (b - a) - 1 - n) = b - a - 1 -n,
-    { rw [nat.sub_sub, int.coe_nat_sub, int.to_nat_of_nonneg (sub_nonneg_of_le h), int.coe_nat_add],
+    have key : ↑(to_nat (b - a) - 1 - n) = b - a - 1 -n,
+    { rw [nat.sub_sub, int.coe_nat_sub, to_nat_of_nonneg (sub_nonneg_of_le h), int.coe_nat_add],
       ring,
       rwa add_comm },
     rw key,
@@ -148,28 +144,53 @@ begin
      simp }
 end
 
-lemma int.to_nat_succ {a : ℤ} (h : 0 ≤ a) : int.to_nat a + 1 = int.to_nat (a+1) :=
+lemma to_nat_succ {a : ℤ} (h : 0 ≤ a) : to_nat a + 1 = to_nat (a+1) :=
 begin
   cases a,
-  refl,
-  exfalso,
-  exact h
+  { refl },
+  { exfalso,
+    exact h }
 end
 
 lemma int_range_eq_concat {a b} (h : a < b) : int.range a b = concat (int.range a (b-1)) (b-1) :=
 begin
   unfold int.range,
-  have h' : 0 ≤ b - a - 1, by have := int.add_one_le_of_lt h ; linarith,
-  have : b - 1 = (λ (r : ℕ), a + ↑r) (int.to_nat (b - a-1)),
-  { change b - 1 = a + ↑(int.to_nat (b - a - 1)),
-    rw int.to_nat_of_nonneg h',
+  have h' : 0 ≤ b - a - 1, by have := add_one_le_of_lt h ; linarith,
+  have : b - 1 = (λ (r : ℕ), a + ↑r) (to_nat (b - a-1)),
+  { change b - 1 = a + ↑(to_nat (b - a - 1)),
+    rw to_nat_of_nonneg h',
     ring },
   rw [this, ←map_concat],
   congr,
   simp only [function.comp_app],
-  rw [int.to_nat_of_nonneg h', concat_eq_append, show a + (b - a - 1) - a = b - a - 1, by simp],
+  rw [to_nat_of_nonneg h', concat_eq_append, show a + (b - a - 1) - a = b - a - 1, by simp],
   convert list.range_concat _,
-  rw int.to_nat_succ h',
+  rw to_nat_succ h',
   congr,
   ring
 end
+
+@[simp]
+protected lemma int.length_range (a b) : length (int.range a b) = to_nat (b-a) :=
+by unfold int.range ; rw [length_map, length_range]
+
+@[simp]
+lemma nth_le_int_range (a b n h) : nth_le (int.range a b) n h = a + n :=
+begin
+  unfold int.range,
+  rw nth_le_map,
+  { simp },
+  { simpa using h }
+end
+
+@[simp]
+lemma filter_mem {α : Type*} (l : list α) [decidable_pred (λ i, i ∈ l)] :
+  filter (λ i, i ∈ l) l = l :=
+by simp [filter_eq_self.2]
+
+@[simp]
+lemma filter_true {α : Type*} (l : list α) : filter (λ i, true) l = l :=
+by simp [filter_eq_self.2]
+
+lemma nth_le_cons {α : Type*} (a : α) (t n h) :
+  nth_le (a :: t) (n+1) h = nth_le t n (lt_of_succ_lt_succ h) := rfl

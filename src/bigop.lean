@@ -72,8 +72,12 @@ local notation `?(F` h`)` := if P h then F h else nil
 
 /- First lemmas, without assuming anything on `op` and `nil` -/
 
-
+@[simp]
 lemma big.nil : (big[(◆)/nil]_(i ∈ [] | (P i)) (F i)) = nil :=
+by simp [apply_bigop]
+
+lemma big.filter_mem [decidable_pred (λ i, i ∈ r)] :
+  (big[(◆)/nil]_(i ∈ r) (F i)) = (big[(◆)/nil]_(i ∈ r | i ∈ r) (F i)) :=
 by simp [apply_bigop]
 
 lemma big_cons_true {h} (t) (Ph : P h) :
@@ -267,16 +271,47 @@ lemma big.reverse_range_of_commute (P : ℤ → Prop) [decidable_pred P] (F : �
   (big[(◆)/nil]_(i=a..b | (P i)) F i) = (big[(◆)/nil]_(i=a..b | (P (a+b-i-1))) (F (a+b-i-1))) :=
 by rw [big.reverse_of_commute _ _ _ _ _ H, reverse_int_range_map_int_range, big.map]
 
-lemma big.gather_of_commute (F G : ℤ → R) (a b : ℤ)
-  (H : ∀ i j, i ≠ j → F i ◆ G j = G j ◆ F i) :
-  (big[(◆)/nil]_(i = a..b) F i) ◆ (big[(◆)/nil]_(i = a..b) G i) =
-  big[(◆)/nil]_(i = a..b) F i ◆ G i :=
+lemma big.gather_of_commute (F G : I → R) [decidable_eq I]
+  (H : ∀ n n' (h : n < r.length) (h' : n' < r.length),
+    n ≠ n' → F (r.nth_le n h) ◆ G (r.nth_le n' h') = G (r.nth_le n' h') ◆ F (r.nth_le n h)) :
+  (big[(◆)/nil]_(i ∈ r) F i) ◆ (big[(◆)/nil]_(i ∈ r) G i) =
+  big[(◆)/nil]_(i ∈ r) F i ◆ G i :=
 begin
-  by_cases h : a < b,
-  {
-    sorry },
-  { repeat { rw big.empty_range, swap, exact le_of_not_gt h },
-    rw left_id op }
+  induction r with a t IH,
+  { simp,
+    rw left_id op },
+  { have key : ∀ i ∈ t, G a ◆ F i = F i ◆ G a,
+    { intros i i_in,
+      rcases nth_le_of_mem i_in with ⟨n, h, Hn⟩,
+      specialize H (n+1) 0 (nat.succ_lt_succ h) (nat.succ_pos _),
+      simp at H,
+      rw ←Hn,
+      exact H.symm },
+    simp only [big_cons_true] ,
+    conv_lhs {
+      rw assoc op,
+      congr, skip,
+      rw ←assoc op,
+      congr,
+      rw big.filter_mem,
+      rw ←big.commute_through _ _ _ _ _ key,
+    },
+    rw [assoc op, assoc op, ←big.filter_mem],
+    congr,
+    apply IH,
+    introv neq,
+    replace neq : n + 1 ≠ n' + 1 := λ hneq, neq (nat.succ_inj hneq),
+    specialize H (n+1) (n'+1) (nat.succ_lt_succ h) (nat.succ_lt_succ h') neq,
+    rwa nth_le_cons at H },
+end
+
+lemma big.gather_of_commute_int (F G : ℤ → R) (a b) (H : ∀ i j, i ≠ j → F i ◆ G j = G j ◆ F i) :
+  (big[(◆)/nil]_(i = a..b) F i) ◆ (big[(◆)/nil]_(i = a..b) G i) = big[(◆)/nil]_(i = a..b) F i ◆ G i :=
+begin
+  apply big.gather_of_commute,
+  introv neq,
+  apply H,
+  simp [int.range, neq],
 end
 
 lemma apply_ite {nil : R} {φ : R → R} (Hnil : φ nil = nil) (h : I) :
