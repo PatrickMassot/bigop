@@ -66,9 +66,6 @@ begin
   { by_cases H : P (f h) ; simp [filter_cons_of_pos, filter_cons_of_neg, H, IH] }
 end
 
-lemma list.map_eq_nil {α : Type*} {β : Type*} (f : α → β) (l : list α) : map f l = [] ↔ l = [] :=
-⟨eq_nil_of_map_eq_nil, λ h, by rw h ; refl⟩
-
 lemma list.eq_nil_iff_not_mem {α : Type*} (l : list α) : l = [] ↔ ∀ x, x ∉ l :=
 ⟨λ h, by simp[h],
   begin
@@ -134,10 +131,10 @@ begin
     intros n n_in,
     have n_lt := (list.mem_range'.1 n_in).right,
     rw zero_add at n_lt,
-    have key : ↑(to_nat (b - a) - 1 - n) = b - a - 1 -n,
+    have key : ↑(to_nat (b - a) - 1 - n) = b - a - 1 - n,
     { rw [nat.sub_sub, int.coe_nat_sub, to_nat_of_nonneg (sub_nonneg_of_le h), int.coe_nat_add],
-      ring,
-      rwa add_comm },
+      simp, 
+      linarith },
     rw key,
     ring },
    { rw (int.range_eq_nil a b).2 (le_of_not_le h),

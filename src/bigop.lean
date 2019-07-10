@@ -3,7 +3,7 @@ import tactic.linarith
 import pending_lemmas
 
 open list
-#check foldr
+
 variables {R : Type*} {I : Type*} (op : R → R → R) (nil: R)
           (r : list I) (P : I → Prop) [decidable_pred P] (F : I → R)
 
